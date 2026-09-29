@@ -6,7 +6,7 @@ on:
     branches:
       - 25.12
     paths:
-      - .gitea/workflows/build-x86-64.yml
+      - .gitea/workflows/build-25-12-x86-64.yml
       - configs/x86-64.config
       - scripts/prepare-integrated-sources.sh
       - scripts/build-bandix-from-source.sh
