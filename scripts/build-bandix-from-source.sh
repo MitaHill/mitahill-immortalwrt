@@ -64,7 +64,7 @@ export "$linker_var=$linker"
 )
 binary="upstream/bandix/target/$rust_target/release/bandix"
 test -s "$binary"
-file "$binary" | grep -F "$machine"
+file "$binary" | grep -Fi "$machine"
 
 archive_name="bandix-${version}-${rust_target}.tar.gz"
 archive_root="upstream/bandix-release/bandix-${version}-${rust_target}"
