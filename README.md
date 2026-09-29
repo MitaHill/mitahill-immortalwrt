@@ -68,6 +68,12 @@ To build your own firmware you need a GNU/Linux, BSD or macOS system (case sensi
   - [OpenWrt Routing](https://github.com/openwrt/routing): Packages specifically focused on (mesh) routing.
   - [OpenWrt Video](https://github.com/openwrt/video): Packages specifically focused on display servers and clients (Xorg and Wayland).
 
+## Gitea source builds
+
+This `25.12` branch tracks the ImmortalWrt v25.12.2 source release and provides
+x86-64 and ARMv8 EFI firmware workflows with source-built PassWall and Bandix.
+See [the Gitea build guide](docs/gitea-build.md) for targets and release files.
+
 ## Support Information
 For a list of supported devices see the [OpenWrt Hardware Database](https://openwrt.org/supported_devices)
   ### Documentation

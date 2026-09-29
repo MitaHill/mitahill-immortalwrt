@@ -1,0 +1,84 @@
+name: Build ImmortalWrt 25.12.2 arm64 with PassWall and Bandix
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 25.12
+    paths:
+      - .gitea/workflows/build-arm64.yml
+      - configs/arm64.config
+      - scripts/prepare-integrated-sources.sh
+      - scripts/build-bandix-from-source.sh
+      - scripts/run-integrated-build.sh
+
+permissions:
+  code: read
+  releases: write
+
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    timeout-minutes: 720
+    container: node:22-bookworm
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            autoconf automake bison build-essential ccache clang cmake cpio curl file \
+            flex g++-multilib gawk gcc-multilib genisoimage gettext git \
+            libclang-dev libdw-dev libelf-dev libncurses5-dev libssl-dev lld llvm \
+            patch pkg-config python3 python3-cryptography python3-distutils \
+            python3-pyelftools qemu-utils rsync subversion swig unzip wget \
+            xz-utils zlib1g-dev zstd
+
+      - name: Check out ImmortalWrt source
+        uses: actions/checkout@v4
+
+      - name: Verify source and prepare builder
+        run: |
+          grep -Fq 'VERSION_NUMBER:=$(if $(VERSION_NUMBER),$(VERSION_NUMBER),25.12.2)' include/version.mk
+          test "$(uname -m)" = x86_64
+          df -h .
+          free -h
+          useradd --create-home --shell /bin/bash build
+          chown -R build:build .
+
+      - name: Build source packages and arm64 firmware
+        run: runuser -u build -- bash scripts/run-integrated-build.sh arm64 25.12.2
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-25.12.2-arm64-integrated
+          path: |
+            bin/targets/armsr/armv8/*.img.gz
+            bin/targets/armsr/armv8/*.manifest
+            bin/targets/armsr/armv8/*.buildinfo
+            bin/targets/armsr/armv8/profiles.json
+            bin/targets/armsr/armv8/sha256sums
+            bin/integrated-arm64/*
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publish Gitea release
+        uses: https://gitea.com/actions/gitea-release-action@5a83c90484ef4355121df5eb60558c8ce66e81ac
+        with:
+          server_url: ${{ gitea.server_url }}
+          token: ${{ secrets.GITEA_TOKEN }}
+          tag_name: v25.12.2-arm64-build.${{ gitea.run_number }}
+          target_commitish: ${{ gitea.sha }}
+          name: ImmortalWrt 25.12.2 arm64 integrated build #${{ gitea.run_number }}
+          body: |
+            ImmortalWrt 25.12.2 armsr/armv8 EFI firmware with PassWall and Bandix
+            compiled from the upstream revisions in source-revisions.json.
+            Verify the integrated files against the accompanying sha256sums.
+          prerelease: true
+          files: |
+            bin/targets/armsr/armv8/*.img.gz
+            bin/targets/armsr/armv8/*.manifest
+            bin/targets/armsr/armv8/*.buildinfo
+            bin/targets/armsr/armv8/profiles.json
+            bin/targets/armsr/armv8/sha256sums
+            bin/integrated-arm64/*
