@@ -45,6 +45,7 @@ source "$HOME/.cargo/env"
 rustup toolchain install 1.91.1
 rustup default 1.91.1
 rustup target add "$rust_target"
+rustup toolchain install nightly --component rust-src
 cargo install bpf-linker --version 0.10.2 --locked
 
 cross_dir="$PWD/upstream/musl-cross"
