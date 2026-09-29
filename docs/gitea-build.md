@@ -1,7 +1,7 @@
 # Gitea 固件构建
 
 `25.12` 分支完整保留 ImmortalWrt 官方 `v25.12.2` 源码，并提供
-`build-x86-64.yml` 与 `build-arm64.yml`。推送本分支会分别在 Linux x86-64
+`build-25-12-x86-64.yml` 与 `build-25-12-arm64.yml`。推送本分支会分别在 Linux x86-64
 runner 上构建 `x86/64` 和 `armsr/armv8` 固件；也可以在 Gitea Actions 中
 单独手动运行一个目标。两个工作流均使用 `make -j10`。
 
