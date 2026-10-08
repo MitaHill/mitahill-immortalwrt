@@ -20,6 +20,7 @@ mkdir -p upstream
 } > feeds.conf
 
 ./scripts/feeds update -a
+python3 scripts/pin-xray-core.py
 ./scripts/feeds install -a -f -p passwall_packages
 ./scripts/feeds install -a -f -p passwall_luci
 ./scripts/feeds install -a
@@ -59,7 +60,18 @@ revisions = {
     for name, path in repositories.items()
 }
 Path("source-revisions.json").write_text(
-    json.dumps({"version": version, "target": target, "revisions": revisions}, indent=2)
+    json.dumps(
+        {
+            "version": version,
+            "target": target,
+            "revisions": revisions,
+            "xray_core_override": {
+                "version": "26.7.28",
+                "source_sha256": "a9afe86349c7bd3e6cae60125e62a5ada09d102e1a2760623e77c24a84dbfb46",
+            },
+        },
+        indent=2,
+    )
     + "\n"
 )
 PY
