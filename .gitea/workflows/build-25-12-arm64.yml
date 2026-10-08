@@ -11,6 +11,9 @@ on:
       - scripts/prepare-integrated-sources.sh
       - scripts/build-bandix-from-source.sh
       - scripts/run-integrated-build.sh
+      - scripts/verify-x86-firmware.py
+      - assets/rootfs-expand/**
+      - tests/**
 
 permissions:
   code: read
@@ -45,6 +48,9 @@ jobs:
           free -h
           useradd --create-home --shell /bin/bash build
           chown -R build:build .
+
+      - name: Test integrated build and offline expansion logic
+        run: python3 -m unittest discover -s tests -v
 
       - name: Build source packages and arm64 firmware
         run: runuser -u build -- bash scripts/run-integrated-build.sh arm64 25.12.2

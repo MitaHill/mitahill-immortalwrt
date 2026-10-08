@@ -24,26 +24,40 @@ esac
 echo "Preparing upstream package sources for $version $target"
 bash scripts/prepare-integrated-sources.sh "$target" "$version"
 cp "$config" .config
+required_packages=(
+  luci-app-passwall luci-i18n-passwall-zh-cn
+  bandix luci-app-bandix luci-i18n-bandix-zh-cn
+  sing-box xray-core geoview chinadns-ng hysteria v2ray-geoip v2ray-geosite
+  parted losetup resize2fs blkid lsblk
+)
+for package in "${required_packages[@]}"; do
+  printf 'CONFIG_PACKAGE_%s=y\n' "$package" >> .config
+done
+# These feeds are build inputs, not repositories hosted by the release mirror.
+for feed in bandix_backend bandix_luci passwall_luci passwall_packages video; do
+  printf 'CONFIG_FEED_%s=m\n' "$feed" >> .config
+done
+if [ "$target" = x86-64 ]; then
+  mkdir -p files
+  cp -a assets/rootfs-expand/. files/
+fi
 cat >> .config <<'CONFIG'
 CONFIG_LUCI_LANG_zh_Hans=y
 CONFIG_PACKAGE_luci=y
-CONFIG_PACKAGE_luci-app-passwall=y
-CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y
-CONFIG_PACKAGE_bandix=y
-CONFIG_PACKAGE_luci-app-bandix=y
-CONFIG_PACKAGE_luci-i18n-bandix-zh-cn=y
-CONFIG_PACKAGE_sing-box=y
-CONFIG_PACKAGE_xray-core=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Geoview=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Hysteria=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y
 CONFIG
 make defconfig
-for name in "${target_checks[@]}" \
-  CONFIG_PACKAGE_luci-app-passwall \
-  CONFIG_PACKAGE_bandix \
-  CONFIG_PACKAGE_luci-app-bandix \
-  CONFIG_PACKAGE_sing-box \
-  CONFIG_PACKAGE_xray-core; do
+for name in "${target_checks[@]}" "${required_packages[@]/#/CONFIG_PACKAGE_}"; do
   grep -qx "${name}=y" .config || {
     echo "Configuration did not select $name" >&2
+    exit 1
+  }
+done
+for feed in bandix_backend bandix_luci passwall_luci passwall_packages video; do
+  grep -qx "CONFIG_FEED_${feed}=m" .config || {
+    echo "Unpublished feed is enabled: $feed" >&2
     exit 1
   }
 done
@@ -72,7 +86,7 @@ cp "${manifests[0]}" "$bundle/immortalwrt-$version-$target-passwall-bandix.manif
 cp source-revisions.json "$bundle/"
 manifest="$bundle/immortalwrt-$version-$target-passwall-bandix.manifest"
 
-for package in luci-app-passwall bandix luci-app-bandix sing-box xray-core; do
+for package in "${required_packages[@]}"; do
   grep -Eq "^${package}[[:space:]]" "$manifest" || {
     echo "Firmware manifest is missing $package" >&2
     exit 1

@@ -8,9 +8,13 @@ on:
     paths:
       - .gitea/workflows/build-25-12-x86-64.yml
       - configs/x86-64.config
+      - include/image.mk
       - scripts/prepare-integrated-sources.sh
       - scripts/build-bandix-from-source.sh
       - scripts/run-integrated-build.sh
+      - scripts/verify-x86-firmware.py
+      - assets/rootfs-expand/**
+      - tests/**
 
 permissions:
   code: read
@@ -31,7 +35,7 @@ jobs:
             flex g++-multilib gawk gcc-multilib genisoimage gettext git \
             libclang-dev libdw-dev libelf-dev libncurses5-dev libssl-dev lld llvm \
             patch pkg-config python3 python3-cryptography python3-distutils \
-            python3-pyelftools qemu-utils rsync subversion swig unzip wget \
+            python3-pyelftools qemu-utils qemu-system-x86 ovmf rsync subversion swig unzip wget \
             xz-utils zlib1g-dev zstd
 
       - name: Check out ImmortalWrt source
@@ -46,8 +50,14 @@ jobs:
           useradd --create-home --shell /bin/bash build
           chown -R build:build .
 
+      - name: Test integrated build and offline expansion logic
+        run: python3 -m unittest discover -s tests -v
+
       - name: Build source packages and x86-64 firmware
         run: runuser -u build -- bash scripts/run-integrated-build.sh x86-64 25.12.2
+
+      - name: Verify x86 firmware offline before publication
+        run: python3 scripts/verify-x86-firmware.py bin/integrated-x86-64/immortalwrt-25.12.2-x86-64-passwall-bandix-ext4-combined-efi.img.gz
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

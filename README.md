@@ -73,6 +73,9 @@ To build your own firmware you need a GNU/Linux, BSD or macOS system (case sensi
 This `25.12` branch tracks the ImmortalWrt v25.12.2 source release and provides
 x86-64 and ARMv8 EFI firmware workflows with source-built PassWall and Bandix.
 See [the Gitea build guide](docs/gitea-build.md) for targets and release files.
+The x86 ext4 image includes offline expansion assets from `assets/rootfs-expand/`.
+Run `python3 -m unittest discover -s tests -v` for build and expansion checks;
+the x86 workflow also boots the firmware without networking before publication.
 
 ## Support Information
 For a list of supported devices see the [OpenWrt Hardware Database](https://openwrt.org/supported_devices)

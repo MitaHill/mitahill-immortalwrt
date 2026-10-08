@@ -1,0 +1,12 @@
+#!/bin/sh /etc/rc.common
+# SPDX-License-Identifier: GPL-2.0-only
+START=12
+
+boot() {
+    [ "$FAILSAFE" = true ] && return 0
+    . /usr/libexec/rootfs-expand.sh
+    rootfs_expand >> /tmp/rootfs-expand.log 2>&1 || {
+        logger -t rootfs-expand "Expansion failed; see /tmp/rootfs-expand.log"
+        return 1
+    }
+}

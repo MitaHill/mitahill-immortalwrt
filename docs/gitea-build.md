@@ -20,3 +20,26 @@ EFI 镜像、manifest、已编译的 PassWall/Bandix 软件包、版本记录和
 两个目标都使用 `ubuntu-latest` Linux runner；ARM64 是固件目标架构，
 不依赖 Mac M5 runner。25.12 使用 APK 软件包。构建期间的软件包和
 上游源码只保存在该次运行的工作目录，完成后由发布附件保留产物与来源记录。
+
+## 内置依赖与离线扩容
+
+构建显式选入 Geoview、ChinaDNS-NG、Hysteria、V2Ray GeoIP/GeoSite，
+以及 parted、losetup、resize2fs、blkid、lsblk。配置与 manifest 缺少任一
+必需包都会使构建失败。未发布的定制 feed 和 video 的镜像站地址默认注释，
+不影响从这些 feed 编译并内置软件包。
+
+x86-64 ext4 镜像生成后，在构建机上清除 make_ext4fs 的 resize_inode
+特性并运行 e2fsck，避免已有保留 GDT 布局导致在线扩容失败。这一步
+发生在打包前、文件系统未挂载时，不增加设备启动步骤。
+
+x86-64 ext4 镜像在启动阶段自动识别根分区、修复 GPT 尾部位置并扩容。
+工具和脚本全部内置，不下载内容、不等待网络、不安装软件。
+只有内核仍看到旧分区容量时才自动重启一次；随后在线扩展实际 ext4
+文件系统，不创建额外 loop 映射，不进行第二次重启。其他文件系统、
+非第二分区或根分区之后还有分区的布局会跳过。日志位于
+`/tmp/rootfs-expand.log`；成功状态记录于 `/etc/rootfs-expand.done`。
+
+本地逻辑检查：`python3 -m unittest discover -s tests -v`。
+x86 工作流在发布前使用断网 QEMU 验证实际包清单、4 GiB 磁盘扩容、
+再次启动及原始大小磁盘；任何验证失败均不发布固件。ARM64 不安装
+自动扩容脚本，未进行 ARM64 启动验证。

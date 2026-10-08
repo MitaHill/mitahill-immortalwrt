@@ -321,6 +321,9 @@ define Image/mkfs/ext4
 		$(if $(CONFIG_TARGET_EXT4_JOURNAL),,-J) \
 		$(if $(SOURCE_DATE_EPOCH),-T $(SOURCE_DATE_EPOCH)) \
 		$@ $(call mkfs_target_dir,$(1))/
+	# make_ext4fs reserves an incompatible resize inode; fix it before mounting.
+	$(if $(CONFIG_TARGET_x86_64),$(STAGING_DIR_HOST)/bin/tune2fs -O ^resize_inode $@)
+	$(if $(CONFIG_TARGET_x86_64),$(STAGING_DIR_HOST)/bin/e2fsck -fy $@ || [ "$$?" -eq 1 ])
 endef
 
 # Don't use the mkfs.erofs builtin $SOURCE_DATE_EPOCH behavior
