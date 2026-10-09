@@ -84,6 +84,7 @@ class IntegratedBuildTests(unittest.TestCase):
                 return
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             config = (work / ".config").read_text()
+            self.assertIn("CONFIG_TARGET_ROOTFS_PARTSIZE=256\n", config)
             for feed in ("bandix_backend", "bandix_luci", "passwall_luci", "passwall_packages", "video"):
                 self.assertIn(f"CONFIG_FEED_{feed}=m\n", config)
             if target == "x86-64":
