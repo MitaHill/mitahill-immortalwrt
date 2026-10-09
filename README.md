@@ -77,6 +77,16 @@ The x86 ext4 image includes offline expansion assets from `assets/rootfs-expand/
 Run `python3 -m unittest discover -s tests -v` for build and expansion checks;
 the x86 workflow also boots the firmware without networking before publication.
 
+## GitHub source builds
+
+The public `MitaHill/mitahill-immortalwrt` repository also provides manually
+triggered AMD64 and ARM64 workflows under `.github/workflows/`. Both use the same
+build scripts and package checks as Gitea; AMD64 includes the offline boot check.
+GitHub builds retain artifacts for seven days and do not publish releases.
+Trigger either workflow on the `25.12` branch with `gh workflow run
+build-25-12-x86-64.yml --repo MitaHill/mitahill-immortalwrt --ref 25.12` or
+`gh workflow run build-25-12-arm64.yml --repo MitaHill/mitahill-immortalwrt --ref 25.12`.
+
 ## Support Information
 For a list of supported devices see the [OpenWrt Hardware Database](https://openwrt.org/supported_devices)
   ### Documentation

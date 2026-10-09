@@ -1,0 +1,75 @@
+name: Build 25.12 AMD64
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  firmware:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Prepare build disk
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache /usr/local/share/powershell /usr/local/share/chromium
+          docker image prune --all --force
+          df -h .
+          available=$(df -B1 --output=avail . | tail -n 1)
+          test "$available" -ge 68719476736 || {
+            echo "Full firmware build requires at least 64 GiB of free disk space" >&2
+            exit 1
+          }
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            autoconf automake bison build-essential ccache clang cmake cpio curl file \
+            flex g++-multilib gawk gcc-multilib genisoimage gettext git \
+            libclang-dev libdw-dev libelf-dev libncurses-dev libssl-dev lld llvm \
+            patch pkg-config python3 python3-cryptography \
+            python3-pyelftools qemu-utils qemu-system-x86 ovmf rsync subversion swig unzip wget \
+            xz-utils zlib1g-dev zstd
+
+      - name: Prepare Ubuntu UEFI firmware path
+        run: |
+          test -f /usr/share/OVMF/OVMF_CODE_4M.fd
+          sudo ln -s OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd
+
+      - name: Check out ImmortalWrt source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify source and prepare builder
+        run: |
+          grep -Fq 'VERSION_NUMBER:=$(if $(VERSION_NUMBER),$(VERSION_NUMBER),25.12.2)' include/version.mk
+          test "$(uname -m)" = x86_64
+          df -h .
+          free -h
+
+      - name: Test integrated build and offline expansion logic
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Build source packages and x86-64 firmware
+        run: bash scripts/run-integrated-build.sh x86-64 25.12.2
+
+      - name: Verify x86 firmware offline before publication
+        run: python3 scripts/verify-x86-firmware.py bin/integrated-x86-64/immortalwrt-25.12.2-x86-64-passwall-bandix-ext4-combined-efi.img.gz
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-25.12.2-x86-64-integrated
+          path: |
+            bin/targets/x86/64/*.img.gz
+            bin/targets/x86/64/*.manifest
+            bin/targets/x86/64/*.buildinfo
+            bin/targets/x86/64/profiles.json
+            bin/targets/x86/64/sha256sums
+            bin/integrated-x86-64/*
+          if-no-files-found: error
+          retention-days: 7
