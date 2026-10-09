@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/retry-download.sh"
 
 target=${1:?target required}
 version=${2:?version required}
@@ -19,12 +20,12 @@ mkdir -p upstream
   cat feeds.conf.default
 } > feeds.conf
 
-./scripts/feeds update -a
+retry_download ./scripts/feeds update -a
 python3 scripts/pin-xray-core.py
 ./scripts/feeds install -a -f -p passwall_packages
 ./scripts/feeds install -a -f -p passwall_luci
 ./scripts/feeds install -a
-git clone --depth=1 https://github.com/timsaya/bandix.git upstream/bandix
+retry_download git clone --depth=1 https://github.com/timsaya/bandix.git upstream/bandix
 
 for source_path in \
   package/feeds/passwall_luci/luci-app-passwall \

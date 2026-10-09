@@ -1,0 +1,12 @@
+[Unit]
+Description=Rotate unreferenced Gitea task volumes
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/sbin/gitea-task-volume-cleanup.py
+TimeoutStartSec=10min
+Nice=19
+IOSchedulingClass=idle
+UMask=0077

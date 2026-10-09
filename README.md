@@ -100,3 +100,5 @@ ImmortalWrt is licensed under [GPL-2.0-only](https://spdx.org/licenses/GPL-2.0-o
     <td><a href="https://sourceforge.net/"><img src="https://sourceforge.net/sflogo.php?type=17&group_id=3663829" alt="SourceForge" width=200></a></td>
   </tr>
 </table>
+
+Runner log retention and task-volume rotation are documented in [Gitea build operations](docs/gitea-build.md#runner-stability-and-task-volume-rotation).

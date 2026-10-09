@@ -10,6 +10,7 @@ on:
       - configs/arm64.config
       - scripts/prepare-integrated-sources.sh
       - scripts/build-bandix-from-source.sh
+      - scripts/retry-download.sh
       - scripts/run-integrated-build.sh
       - scripts/verify-x86-firmware.py
       - assets/rootfs-expand/**

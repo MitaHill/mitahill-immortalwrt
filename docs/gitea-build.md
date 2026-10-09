@@ -43,3 +43,33 @@ x86-64 ext4 镜像在启动阶段自动识别根分区、修复 GPT 尾部位置
 x86 工作流在发布前使用断网 QEMU 验证实际包清单、4 GiB 磁盘扩容、
 再次启动及原始大小磁盘；任何验证失败均不发布固件。ARM64 不安装
 自动扩容脚本，未进行 ARM64 启动验证。
+
+## Runner stability and task-volume rotation
+
+The runner keeps its existing version, Docker network and capacity of one.
+Enable native `log.job` with `dir: /data/job-logs`, `retention: 168h` and
+`max_size: 1GB`. Set `health_check.min_free_disk_space_mb: 65536`.
+Back up `/opt/gitea-runner/config.yaml` and restart only after jobs have ended.
+
+Install `scripts/gitea-task-volume-cleanup.py` into `/usr/local/sbin/` and the
+units in `assets/runner/` into `/etc/systemd/system/`. Review `--dry-run`, then
+use `systemctl daemon-reload` and `systemctl enable --now gitea-task-volume-cleanup.timer`.
+The timer checks every 15 minutes, skips running build tasks, and uses an
+exclusive flock. Only unreferenced `GITEA-ACTIONS-TASK-<number>-...` volumes are
+eligible; stopped-container references also protect a volume.
+
+The first idle scan records an orphan's identity and observation time under
+`/var/lib/gitea-task-volume-cleanup/`. Retention starts then, rather than at
+volume creation, so a long-running failed job still gets 24 hours for inspection.
+Below 64 GiB free, cleanup removes the oldest eligible volumes regardless of
+age until 80 GiB is available. Docker errors stop cleanup; deletion is never forced.
+Logs, credentials, tool caches and unrelated images are retained.
+
+Network-only source and toolchain downloads retry at most three times, with
+5 and 15 second delays. Compilation, verification and publication are not
+retried. The final command's exit code is preserved. Full firmware validation
+still runs before publication; expansion requires no network at boot.
+
+Run `python3 -m unittest discover -s tests -v`, shell syntax checks and ShellCheck
+before publishing. Roll back by disabling the timer and restoring the runner
+configuration backup. Deleted temporary volumes cannot be restored.

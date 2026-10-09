@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/retry-download.sh"
 
 target=${1:?target required}
 case "$target" in
@@ -37,20 +38,20 @@ test "$version" = "$recipe_version" || {
 }
 
 if ! command -v rustup >/dev/null 2>&1; then
-  curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs |
-    sh -s -- -y --profile minimal --default-toolchain 1.91.1
+  retry_download curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs -o upstream/rustup-init.sh
+  retry_download sh upstream/rustup-init.sh -y --profile minimal --default-toolchain 1.91.1
 fi
 # shellcheck disable=SC1091
 source "$HOME/.cargo/env"
-rustup toolchain install 1.91.1
+retry_download rustup toolchain install 1.91.1
 rustup default 1.91.1
-rustup target add "$rust_target"
-rustup toolchain install nightly --component rust-src
+retry_download rustup target add "$rust_target"
+retry_download rustup toolchain install nightly --component rust-src
 cargo install bpf-linker --version 0.10.2 --locked
 
 cross_dir="$PWD/upstream/musl-cross"
 mkdir -p "$cross_dir"
-curl --fail --location --retry 3 --silent --show-error \
+retry_download curl --fail --location --silent --show-error \
   "https://github.com/timsaya/musl-cc/releases/download/v0.1.0/${cross_name}.tgz" \
   -o "$cross_dir/${cross_name}.tgz"
 tar -xzf "$cross_dir/${cross_name}.tgz" -C "$cross_dir"
@@ -60,6 +61,7 @@ export "$linker_var=$linker"
 
 (
   cd upstream/bandix
+  retry_download cargo fetch
   cargo build --release --target "$rust_target"
 )
 binary="upstream/bandix/target/$rust_target/release/bandix"

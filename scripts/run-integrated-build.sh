@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/retry-download.sh"
 shopt -s nullglob
 
 target=${1:?target required}
@@ -65,9 +66,9 @@ done
 echo "Compiling Bandix core for $target from upstream source"
 bash scripts/build-bandix-from-source.sh "$target"
 echo "Downloading ImmortalWrt build inputs"
-make download -j10
+retry_download make download -j10
 echo "Building ImmortalWrt $version $target with PassWall and Bandix"
-make -j10 V=sc
+make -j10 V=s
 
 image_dir="bin/targets/$board/$subtarget"
 images=("$image_dir"/*-ext4-combined-efi.img.gz)

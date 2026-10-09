@@ -30,6 +30,7 @@ class IntegratedBuildTests(unittest.TestCase):
             (work / "fakebin").mkdir()
             shutil.copytree(ROOT / "assets", work / "assets", symlinks=True)
             shutil.copy(ROOT / "scripts/run-integrated-build.sh", work / "scripts")
+            shutil.copy(ROOT / "scripts/retry-download.sh", work / "scripts")
             shutil.copy(ROOT / f"configs/{target}.config", work / "configs")
             (work / "scripts/prepare-integrated-sources.sh").write_text(
                 '#!/bin/sh\nprintf "{}\\n" > source-revisions.json\n'
