@@ -1,0 +1,86 @@
+#!/bin/sh
+
+# An alternate proc directory lets regression tests use deterministic snapshots.
+procRoot=${MITAHILL_PROC_ROOT:-/proc}
+
+cpuSnapshot() {
+    awk '
+        /^cpu / {
+            for (i = 2; i <= 9 && i <= NF; i++) {
+                if ($i !~ /^[0-9]+$/) exit
+                total += $i
+            }
+            if (NF >= 5) print total, $5 + $6
+            exit
+        }
+    ' "$procRoot/stat" 2>/dev/null
+}
+
+cpuUsage() {
+    before=$(cpuSnapshot)
+    [ -n "$before" ] || return
+    sleep 0.2 2>/dev/null || return
+    after=$(cpuSnapshot)
+    [ -n "$after" ] || return
+    awk -v before="$before" -v after="$after" 'BEGIN {
+        split(before, b); split(after, a)
+        total = a[1] - b[1]; idle = a[2] - b[2]
+        if (total > 0 && idle >= 0 && idle <= total)
+            printf "%.0f%%", 100 * (total - idle) / total
+    }'
+}
+
+memoryUsage() {
+    awk '
+        $1 == "MemTotal:" && $2 ~ /^[0-9]+$/ { total = $2 }
+        $1 == "MemAvailable:" && $2 ~ /^[0-9]+$/ { available = $2; found = 1 }
+        END {
+            if (total > 0 && found && available >= 0 && available <= total)
+                printf "%.0f / %.0f MiB (%.0f%%)",
+                    (total - available) / 1024, total / 1024,
+                    100 * (total - available) / total
+        }
+    ' "$procRoot/meminfo" 2>/dev/null
+}
+
+diskUsage() {
+    mountPoint=/
+    [ ! -d /overlay ] || mountPoint=/overlay
+    df -Pk "$mountPoint" 2>/dev/null | awk '
+        NR == 2 && $2 ~ /^[0-9]+$/ && $3 ~ /^[0-9]+$/ && $2 > 0 {
+            printf "%.0f / %.0f MiB (%s)", $3 / 1024, $2 / 1024, $5
+        }
+    '
+}
+
+wanAddress() {
+    ubus call "network.interface.$1" status 2>/dev/null |
+        jsonfilter -e "@[\"$2-address\"][0].address" 2>/dev/null
+}
+
+showValue() {
+    printf ' %-16s %s\n' "$1" "${2:-N/A}"
+}
+
+hostName=$(cat "$procRoot/sys/kernel/hostname" 2>/dev/null)
+uptimeText=$(awk '$1 ~ /^[0-9]+([.][0-9]+)?$/ {
+    seconds = int($1)
+    printf "%dd %dh %dm", seconds / 86400, seconds % 86400 / 3600,
+        seconds % 3600 / 60
+}' "$procRoot/uptime" 2>/dev/null)
+loadText=$(awk 'NF >= 3 && $1 ~ /^[0-9.]+$/ && $2 ~ /^[0-9.]+$/ && $3 ~ /^[0-9.]+$/ {
+    printf "%s / %s / %s", $1, $2, $3
+}' "$procRoot/loadavg" 2>/dev/null)
+wan4=$(wanAddress wan ipv4)
+wan6=$(wanAddress wan6 ipv6)
+[ -n "$wan6" ] || wan6=$(wanAddress wan ipv6)
+
+showValue "Hostname" "$hostName"
+showValue "Uptime" "$uptimeText"
+showValue "CPU usage" "$(cpuUsage)"
+showValue "Load (1/5/15m)" "$loadText"
+showValue "Memory" "$(memoryUsage)"
+showValue "Writable disk" "$(diskUsage)"
+showValue "WAN IPv4" "$wan4"
+showValue "WAN IPv6" "$wan6"
+printf ' ------------------------------------------------------\n'

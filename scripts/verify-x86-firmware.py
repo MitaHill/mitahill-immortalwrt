@@ -40,6 +40,15 @@ test -s /etc/rootfs-expand.done || ok=0
 size=$(df -Pk / | awk 'NR==2 {{print $2}}')
 test "$size" -ge {minimum_kib} || ok=0
 if grep -h -v '^[[:space:]]*#' /etc/apk/repositories.d/*.list | grep -E '/(bandix_backend|bandix_luci|passwall_luci|passwall_packages|video)/packages.adb'; then ok=0; fi
+grep -q 'MitaHill version' /etc/banner || ok=0
+status=$(/usr/libexec/mitahill-banner)
+printf '%s\\n' "$status"
+for label in 'CPU usage' 'Memory' 'Writable disk'; do
+    printf '%s\\n' "$status" | grep -E "^ $label +.*[0-9].*%" >/dev/null || ok=0
+done
+for label in 'WAN IPv4' 'WAN IPv6'; do
+    printf '%s\\n' "$status" | grep -E "^ $label +N/A$" >/dev/null || ok=0
+done
 cat /tmp/rootfs-expand.log
 if test "$ok" = 1; then printf '\\nFW_VERIFY:%s\\n' PASS; else printf '\\nFW_VERIFY:%s\\n' FAIL; fi
 poweroff
@@ -67,6 +76,8 @@ poweroff
                         process.stdin.write(b'\n')
                         next_enter = time.monotonic() + 2
                     if not sent and b'root@' in transcript and b':~#' in transcript:
+                        if b'MitaHill version' not in transcript or b' CPU usage' not in transcript:
+                            raise RuntimeError('Interactive MitaHill banner is missing')
                         # Keep each terminal line short and let the emulated UART drain.
                         data = payload.encode()
                         for offset in range(0, len(data), 64):
