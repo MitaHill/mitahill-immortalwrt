@@ -7,7 +7,7 @@ Compared to upstream, we allow to use (non-upstreamable) modifications/hacks to 
 
 This fork is based on ImmortalWrt 25.12.2 and provides AMD64 and ARM64 EFI firmware with PassWall and Bandix compiled from source.<br/>
 It includes the required proxy cores, GeoIP/GeoSite data and disk utilities in the firmware, and adds offline automatic root partition and filesystem expansion for x86-64 ext4 images.
-GitHub and Gitea workflows check the required packages, with an additional offline boot and expansion test for AMD64.
+GitHub Actions workflows check the required packages, with an additional offline boot and expansion test for AMD64.
 
 Default login address: http://192.168.1.1 or http://immortalwrt.lan, username: __root__, password: _none_.
 
@@ -72,24 +72,19 @@ To build your own firmware you need a GNU/Linux, BSD or macOS system (case sensi
   - [OpenWrt Routing](https://github.com/openwrt/routing): Packages specifically focused on (mesh) routing.
   - [OpenWrt Video](https://github.com/openwrt/video): Packages specifically focused on display servers and clients (Xorg and Wayland).
 
-## Gitea source builds
-
-This `25.12` branch tracks the ImmortalWrt v25.12.2 source release and provides
-x86-64 and ARMv8 EFI firmware workflows with source-built PassWall and Bandix.
-See [the Gitea build guide](docs/gitea-build.md) for targets and release files.
-The x86 ext4 image includes offline expansion assets from `assets/rootfs-expand/`.
-Run `python3 -m unittest discover -s tests -v` for build and expansion checks;
-the x86 workflow also boots the firmware without networking before publication.
-
 ## GitHub source builds
 
-The public `MitaHill/mitahill-immortalwrt` repository also provides manually
-triggered AMD64 and ARM64 workflows under `.github/workflows/`. Both use the same
-build scripts and package checks as Gitea; AMD64 includes the offline boot check.
-GitHub builds retain artifacts for seven days and do not publish releases.
-Trigger either workflow on the `25.12` branch with `gh workflow run
-build-25-12-x86-64.yml --repo MitaHill/mitahill-immortalwrt --ref 25.12` or
-`gh workflow run build-25-12-arm64.yml --repo MitaHill/mitahill-immortalwrt --ref 25.12`.
+The `25.12` branch tracks ImmortalWrt v25.12.2 and builds AMD64 and ARM64 EFI
+firmware with source-built PassWall and Bandix through GitHub Actions.
+GitHub is the sole build and release destination. See [the build guide](docs/github-build.md)
+for GitHub CLI commands, verification and release files. Workflows run manually;
+pushes do not start duplicate builds. AMD64 includes offline expansion and boot checks.
+Successful builds publish GitHub prereleases and retain Actions artifacts for seven days.
+
+The English MitaHill SSH banner displays CPU, memory, writable disk and WAN
+IPv4/IPv6 status. Unavailable values display `N/A`.
+Run `python3 -m unittest discover -s tests -v` and
+`python3 -m unittest discover -s package/base-files/tests -v` for local checks.
 
 ## Support Information
 For a list of supported devices see the [OpenWrt Hardware Database](https://openwrt.org/supported_devices)
@@ -114,5 +109,3 @@ ImmortalWrt is licensed under [GPL-2.0-only](https://spdx.org/licenses/GPL-2.0-o
     <td><a href="https://sourceforge.net/"><img src="https://sourceforge.net/sflogo.php?type=17&group_id=3663829" alt="SourceForge" width=200></a></td>
   </tr>
 </table>
-
-Runner log retention and task-volume rotation are documented in [Gitea build operations](docs/gitea-build.md#runner-stability-and-task-volume-rotation).

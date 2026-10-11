@@ -8,6 +8,8 @@ permissions:
 
 jobs:
   firmware:
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     steps:
@@ -41,13 +43,17 @@ jobs:
 
       - name: Verify source and prepare builder
         run: |
+          # Match the literal Make expression.
+          # shellcheck disable=SC2016
           grep -Fq 'VERSION_NUMBER:=$(if $(VERSION_NUMBER),$(VERSION_NUMBER),25.12.2)' include/version.mk
           test "$(uname -m)" = x86_64
           df -h .
           free -h
 
       - name: Test integrated build and offline expansion logic
-        run: python3 -m unittest discover -s tests -v
+        run: |
+          python3 -m unittest discover -s tests -v
+          python3 -m unittest discover -s package/base-files/tests -v
 
       - name: Build source packages and arm64 firmware
         run: bash scripts/run-integrated-build.sh arm64 25.12.2
@@ -62,6 +68,32 @@ jobs:
             bin/targets/armsr/armv8/*.buildinfo
             bin/targets/armsr/armv8/profiles.json
             bin/targets/armsr/armv8/sha256sums
-            bin/integrated-arm64/*
+            bin/integrated-arm64/*.img.gz bin/integrated-arm64/*.manifest
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Markdown fences are literal text.
+          # shellcheck disable=SC2016
+          {
+            cat <<'NOTES'
+          ImmortalWrt 25.12.2 arm64 EFI firmware with source-built PassWall and Bandix.
+          Includes the English MitaHill SSH banner with live system and WAN status.
+          Source revisions and SHA256 checksums are listed below.
+          Additional packages and metadata are available in the Actions artifact.
+          NOTES
+            printf '\nSource revisions:\n```json\n'
+            cat source-revisions.json
+            printf '\n```\n\nSHA256:\n```text\n'
+            sha256sum bin/integrated-arm64/*.img.gz bin/integrated-arm64/*.manifest
+            printf '```\n'
+          } > "$RUNNER_TEMP/release-notes.md"
+          gh release create "v25.12.2-arm64-build.${GITHUB_RUN_NUMBER}" \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "ImmortalWrt 25.12.2 arm64 integrated build #${GITHUB_RUN_NUMBER}" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
+            bin/integrated-arm64/*.img.gz bin/integrated-arm64/*.manifest
