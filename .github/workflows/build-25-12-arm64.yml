@@ -68,7 +68,7 @@ jobs:
             bin/targets/armsr/armv8/*.buildinfo
             bin/targets/armsr/armv8/profiles.json
             bin/targets/armsr/armv8/sha256sums
-            bin/integrated-arm64/*.img.gz bin/integrated-arm64/*.manifest
+            bin/integrated-arm64/*
           if-no-files-found: error
           retention-days: 7
 

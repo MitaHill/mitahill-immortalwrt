@@ -15,7 +15,8 @@ ImmortalWrt 构建系统编译。Bandix 核心先用 Rust 1.91.1、`bpf-linker` 
 commit，以及 Bandix 源码构建包的 SHA256。`bin/integrated-<target>/` 包含
 EFI 镜像、manifest、已编译的 PassWall/Bandix 软件包、版本记录和
 `sha256sums`。工作流先核对目标输出的校验文件，再核对定制目录中的
-校验文件与 manifest，最后将这些内容上传为 GitHub artifact 和预发布版附件。
+校验文件与 manifest，最后将完整产物上传为 GitHub artifact；预发布版只附加
+定制 EFI 镜像和 manifest。
 
 两个目标都使用 `ubuntu-24.04` Linux runner；ARM64 是固件目标架构，
 不依赖 Mac M5 runner。25.12 使用 APK 软件包。构建期间的软件包和

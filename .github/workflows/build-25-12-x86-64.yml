@@ -76,7 +76,7 @@ jobs:
             bin/targets/x86/64/*.buildinfo
             bin/targets/x86/64/profiles.json
             bin/targets/x86/64/sha256sums
-            bin/integrated-x86-64/*.img.gz bin/integrated-x86-64/*.manifest
+            bin/integrated-x86-64/*
           if-no-files-found: error
           retention-days: 7
 
