@@ -11,6 +11,12 @@ ImmortalWrt 构建系统编译。Bandix 核心先用 Rust 1.91.1、`bpf-linker` 
 所选架构的 musl 工具链从源码编译，再由 Bandix 包配方封装并选入固件。
 构建要求 Bandix 核心版本与包配方版本一致。
 
+sing-box 是例外：每次构建查询 SagerNet GitHub 最新正式版，按目标架构下载完整
+musl 二进制，以发行资产的 SHA256 校验后封装为 `sing-box` 软件包，不编译 Go/Cronet。
+版本、下载地址和 SHA256 写入 `source-revisions.json`；查询、匹配或校验失败即停止。
+AMD64 离线启动验证还检查实际版本与软件包记录一致，以及 Naive HTTP/2、QUIC
+出站配置均能初始化。其他组件保留现有配方的默认功能和来源，不改用 tiny/lite 变体。
+
 每次运行的 `source-revisions.json` 记录 ImmortalWrt 与五个上游仓库的
 commit，以及 Bandix 源码构建包的 SHA256。`bin/integrated-<target>/` 包含
 EFI 镜像、manifest、已编译的 PassWall/Bandix 软件包、版本记录和

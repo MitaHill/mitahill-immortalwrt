@@ -76,3 +76,5 @@ Path("source-revisions.json").write_text(
     + "\n"
 )
 PY
+
+python3 scripts/use-release-sing-box.py "$target"

@@ -56,6 +56,8 @@ jobs:
           python3 -m unittest discover -s package/base-files/tests -v
 
       - name: Build source packages and arm64 firmware
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bash scripts/run-integrated-build.sh arm64 25.12.2
 
       - name: Upload build artifacts

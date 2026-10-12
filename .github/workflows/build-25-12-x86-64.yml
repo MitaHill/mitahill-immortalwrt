@@ -61,6 +61,8 @@ jobs:
           python3 -m unittest discover -s package/base-files/tests -v
 
       - name: Build source packages and x86-64 firmware
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bash scripts/run-integrated-build.sh x86-64 25.12.2
 
       - name: Verify x86 firmware offline before publication

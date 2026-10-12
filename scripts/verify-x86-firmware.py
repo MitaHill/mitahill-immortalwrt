@@ -2,6 +2,7 @@
 """Boot the release image without a network before allowing publication."""
 import argparse
 import gzip
+import json
 import os
 import selectors
 import shutil
@@ -19,6 +20,8 @@ REQUIRED_PACKAGES = (
 
 
 def boot_and_verify(disk, minimum_kib, allow_reboot):
+    record = Path('source-revisions.json')
+    sing_box_version = json.loads(record.read_text())['sing_box_release']['version']
     firmware = Path('/usr/share/OVMF/OVMF_CODE.fd')
     command = [
         'qemu-system-x86_64', '-machine', 'q35', '-m', '1024',
@@ -35,6 +38,17 @@ while ! test -s /etc/rootfs-expand.done && test "$waited" -lt 90; do
 done
 for p in {' '.join(REQUIRED_PACKAGES)}; do
     apk info -e "$p" >/dev/null || {{ echo "Missing package: $p"; ok=0; }}
+done
+/usr/bin/sing-box version > /tmp/sing-box-version.txt || ok=0
+cat /tmp/sing-box-version.txt
+grep -qx 'sing-box version {sing_box_version}' /tmp/sing-box-version.txt || ok=0
+for tag in with_naive_outbound with_musl; do
+    grep '^Tags: ' /tmp/sing-box-version.txt | grep -E "(^|[, ])$tag(,|$)" >/dev/null || ok=0
+done
+apk info --who-owns /usr/bin/sing-box | grep -Fx '/usr/bin/sing-box is owned by sing-box-{sing_box_version}-r1' >/dev/null || ok=0
+for quic in false true; do
+    printf '%s\\n' '{{"outbounds":[{{"type":"naive","server":"127.0.0.1","server_port":443,"username":"fixture","password":"fixture","quic":'"$quic"',"tls":{{"enabled":true,"server_name":"example.com"}}}}]}}' > /tmp/naive-check.json
+    /usr/bin/sing-box check -c /tmp/naive-check.json || ok=0
 done
 test -s /etc/rootfs-expand.done || ok=0
 size=$(df -Pk / | awk 'NR==2 {{print $2}}')
