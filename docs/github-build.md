@@ -65,7 +65,8 @@ GitHub 托管 runner 每次运行独立，不使用原 Gitea 的任务卷轮换�
 
 保留 ImmortalWrt Logo，增加 MitaHill 标识及全英文状态摘要：Hostname、
 Uptime、CPU usage、Load (1/5/15m)、Memory、Writable disk、WAN IPv4/IPv6。
-缺失指标显示 `N/A`。CPU 使用率通过 0.2 秒的累计计数差计算；内存使用
+缺失指标显示 `N/A`。CPU 使用率优先通过 0.2 秒的累计计数差计算；BusyBox 不支持小数休眠时回退到
+1 秒采样，不依赖 FLOAT_DURATION 配置。内存使用
 `MemTotal - MemAvailable`；磁盘优先取 `/overlay`，否则取 `/`。
 WAN 地址来自本机 ubus 接口状态，IPv6 优先取 wan6，随后取 wan；不查询外部服务。
 只在交互式登录显示动态摘要和简短 APK 提示，failsafe 保持原有提示。

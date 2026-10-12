@@ -13,7 +13,7 @@ FIXTURES = Path(__file__).parent / 'fixtures/banner'
 
 
 class BannerTests(unittest.TestCase):
-    def render(self, missing=False, ipv6_on_wan=False, zero_delta=False):
+    def render(self, missing=False, ipv6_on_wan=False, zero_delta=False, integer_sleep=False):
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
             proc = work / 'proc'
@@ -36,6 +36,12 @@ case "$interface:$*" in
 esac
 ''',
             }
+            if integer_sleep:
+                commands['sleep'] = (
+                    '#!/bin/sh\n'
+                    'case "$1" in *[!0-9]*) exit 1 ;; esac\n'
+                    'cp "$MITAHILL_PROC_ROOT/stat-after" "$MITAHILL_PROC_ROOT/stat"\n'
+                )
             if missing:
                 commands = {name: '#!/bin/sh\nexit 1\n' for name in commands}
             if zero_delta:
@@ -74,6 +80,9 @@ esac
     def test_ipv6_falls_back_to_wan_for_dual_stack_pppoe(self):
         self.assertEqual(self.render(ipv6_on_wan=True)['WAN IPv6'],
                          '2001:db8:1234::3')
+
+    def test_cpu_sampling_works_with_integer_only_busybox_sleep(self):
+        self.assertEqual(self.render(integer_sleep=True)['CPU usage'], '8%')
 
     def test_cpu_with_no_new_ticks_displays_na(self):
         self.assertTrue(self.render(zero_delta=True)['CPU usage'].endswith('N/A'))

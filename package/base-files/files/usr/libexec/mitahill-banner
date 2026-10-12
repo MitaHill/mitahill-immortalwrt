@@ -19,7 +19,8 @@ cpuSnapshot() {
 cpuUsage() {
     before=$(cpuSnapshot)
     [ -n "$before" ] || return
-    sleep 0.2 2>/dev/null || return
+    # ImmortalWrt disables BusyBox FLOAT_DURATION by default.
+    sleep 0.2 2>/dev/null || sleep 1 2>/dev/null || return
     after=$(cpuSnapshot)
     [ -n "$after" ] || return
     awk -v before="$before" -v after="$after" 'BEGIN {
